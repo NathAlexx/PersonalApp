@@ -2,17 +2,17 @@
 // Para evoluir: use estratégias por rota (stale-while-revalidate) e versões.
 
 const CACHE_NAME = 'personal-app-cache-v1';
+
+const scope = self.registration.scope; // ex: https://nathalexx.github.io/PersonalApp/
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/manifest.webmanifest'
+  new URL('./', scope).toString(),
+  new URL('./index.html', scope).toString(),
+  new URL('./styles.css', scope).toString(),
+  new URL('./manifest.webmanifest', scope).toString(),
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
 });
 
 self.addEventListener('activate', (event) => {
