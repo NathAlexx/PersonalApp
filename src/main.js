@@ -4,7 +4,7 @@ import { initApp } from './app.js';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`);
       // console.log('SW registrado');
     } catch (e) {
       console.warn('Falha ao registrar SW', e);
