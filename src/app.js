@@ -108,11 +108,7 @@ async function showApp(session) {
   el('userInfo').textContent = session.user.email;
 
   updateNetBadge();
-  window.addEventListener('online', () => {
-    updateNetBadge();
-    trySync();
-  });
-  window.addEventListener('offline', updateNetBadge);
+  
 
   // Render imediato do cache local
   await refreshFromLocal();
@@ -144,50 +140,7 @@ async function showApp(session) {
   });
 
   // Eventos UI
-  // Remove possíveis listeners duplicados (quando showApp é chamado várias vezes)
-  // Faz clone dos elementos e substitui, o que limpa event listeners prévios.
-  const oldForm = el('formNewNote');
-  const newForm = oldForm.cloneNode(true);
-  oldForm.parentNode.replaceChild(newForm, oldForm);
-
-  const oldBtnSync = el('btnSync');
-  const newBtnSync = oldBtnSync.cloneNode(true);
-  oldBtnSync.parentNode.replaceChild(newBtnSync, oldBtnSync);
-
-  const oldBtnSignOut = el('btnSignOut');
-  const newBtnSignOut = oldBtnSignOut.cloneNode(true);
-  oldBtnSignOut.parentNode.replaceChild(newBtnSignOut, oldBtnSignOut);
-
-  // Agora adiciona os listeners uma vez
-  el('formNewNote').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const input = el('noteInput');
-    const content = input.value.trim();
-    if (!content) return;
-
-    const user = (await supabase.auth.getUser()).data.user;
-    if (!user) return;
-
-    const now = new Date().toISOString();
-    const note = {
-      id: crypto.randomUUID(),
-      user_id: user.id,
-      content,
-      created_at: now,
-      updated_at: now
-    };
-
-    await saveNoteOptimistic(note);
-    input.value = '';
-    await refreshFromLocal();
-    await trySync();
-  });
-
-  el('btnSync').addEventListener('click', trySync);
-
-  el('btnSignOut').addEventListener('click', async () => {
-    await supabase.auth.signOut();
-  });
+  // UI listeners são registrados em initApp() para evitar duplicação.
 }
 
 async function showAuth() {
@@ -241,6 +194,45 @@ export async function initApp() {
       setMsg(authMsg, 'Conta criada! Verifique seu e-mail (se confirmação estiver ligada) e depois faça login.', true);
     }
   });
+
+  // Listeners de UI que devem existir apenas uma vez durante o ciclo de vida da página
+  el('formNewNote').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = el('noteInput');
+    const content = input.value.trim();
+    if (!content) return;
+
+    const user = (await supabase.auth.getUser()).data.user;
+    if (!user) return;
+
+    const now = new Date().toISOString();
+    const note = {
+      id: crypto.randomUUID(),
+      user_id: user.id,
+      content,
+      created_at: now,
+      updated_at: now
+    };
+
+    await saveNoteOptimistic(note);
+    input.value = '';
+    await refreshFromLocal();
+    await trySync();
+  });
+
+  el('btnSync').addEventListener('click', trySync);
+
+  el('btnSignOut').addEventListener('click', async () => {
+    await supabase.auth.signOut();
+  });
+
+  // Atualiza badge de rede e listeners para online/offline — registrar uma vez
+  updateNetBadge();
+  window.addEventListener('online', () => {
+    updateNetBadge();
+    trySync();
+  });
+  window.addEventListener('offline', updateNetBadge);
 
   // sessão existente
   const { data: sess } = await supabase.auth.getSession();
