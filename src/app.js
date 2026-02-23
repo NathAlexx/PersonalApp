@@ -144,6 +144,21 @@ async function showApp(session) {
   });
 
   // Eventos UI
+  // Remove possíveis listeners duplicados (quando showApp é chamado várias vezes)
+  // Faz clone dos elementos e substitui, o que limpa event listeners prévios.
+  const oldForm = el('formNewNote');
+  const newForm = oldForm.cloneNode(true);
+  oldForm.parentNode.replaceChild(newForm, oldForm);
+
+  const oldBtnSync = el('btnSync');
+  const newBtnSync = oldBtnSync.cloneNode(true);
+  oldBtnSync.parentNode.replaceChild(newBtnSync, oldBtnSync);
+
+  const oldBtnSignOut = el('btnSignOut');
+  const newBtnSignOut = oldBtnSignOut.cloneNode(true);
+  oldBtnSignOut.parentNode.replaceChild(newBtnSignOut, oldBtnSignOut);
+
+  // Agora adiciona os listeners uma vez
   el('formNewNote').addEventListener('submit', async (e) => {
     e.preventDefault();
     const input = el('noteInput');
