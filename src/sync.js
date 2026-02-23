@@ -42,13 +42,16 @@ export async function pushOutbox() {
 }
 
 export async function saveNoteOptimistic(note) {
+  console.log('[sync] saveNoteOptimistic', note.id);
   await upsertNote(note);
+  console.log('[sync] upsertNote completed', note.id);
   await enqueueOp({
     op_id: crypto.randomUUID(),
     type: 'upsert_note',
     payload: note,
     created_at: new Date().toISOString()
   });
+  console.log('[sync] enqueueOp completed for', note.id);
 }
 
 export async function deleteNoteOptimistic(id) {

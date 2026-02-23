@@ -35,6 +35,7 @@ async function tx(storeName, mode, fn) {
 }
 
 export async function upsertNote(note) {
+  console.log('[storage] upsertNote', note.id);
   await tx('notes', 'readwrite', (s) => s.put(note));
 }
 
@@ -60,6 +61,7 @@ export async function clearNotes() {
 // Outbox
 export async function enqueueOp(op) {
   // op: { op_id, type, payload, created_at }
+  console.log('[storage] enqueueOp', op.op_id, op.type);
   await tx('outbox', 'readwrite', (s) => s.put(op));
 }
 

@@ -203,6 +203,7 @@ export async function initApp() {
     e.preventDefault();
     const input = el('noteInput');
     const content = input.value.trim();
+    console.log('[app] formNewNote submit fired', { content, hasSession: !!currentSession });
     if (!content) return;
 
     // Usa sessão atual definida em showApp() para evitar dependência de chamadas assíncronas
@@ -224,6 +225,7 @@ export async function initApp() {
     };
 
     await saveNoteOptimistic(note);
+    console.log('[app] saveNoteOptimistic called', note.id);
     input.value = '';
     await refreshFromLocal();
     await trySync();
