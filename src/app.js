@@ -69,6 +69,7 @@ function renderNotes(listEl, notes) {
 
 let unsubscribeRealtime = null;
 let currentSession = null;
+let isSyncing = false;
 
 async function refreshFromLocal() {
   const notes = await getLocalNotes();
@@ -81,11 +82,18 @@ async function trySync() {
     msg.textContent = 'Offline: mudanças vão sincronizar quando a internet voltar.';
     return;
   }
+  if (isSyncing) {
+    console.log('[app] trySync skipped: já sincronizando');
+    return;
+  }
+  isSyncing = true;
+  const btn = document.getElementById('btnSync');
+  if (btn) btn.disabled = true;
   try {
     msg.textContent = 'Sincronizando…';
     await pushOutbox();
-    // Opcional: recarregar do servidor para garantir consistência
-    const user = (await supabase.auth.getUser()).data.user;
+    // Se tivermos sessão atual, evita chamada adicional a supabase.auth.getUser()
+    const user = currentSession?.user;
     if (user) {
       await pullFromServer(user.id);
       await refreshFromLocal();
@@ -93,6 +101,10 @@ async function trySync() {
     msg.textContent = 'Sincronizado.';
   } catch (e) {
     msg.textContent = `Falha ao sincronizar: ${e.message || e}`;
+  }
+  finally {
+    isSyncing = false;
+    if (btn) btn.disabled = false;
   }
 }
 
