@@ -68,6 +68,7 @@ function renderNotes(listEl, notes) {
 }
 
 let unsubscribeRealtime = null;
+let currentSession = null;
 
 async function refreshFromLocal() {
   const notes = await getLocalNotes();
@@ -106,6 +107,7 @@ async function showApp(session) {
   el('btnSignOut').hidden = false;
 
   el('userInfo').textContent = session.user.email;
+  currentSession = session;
 
   updateNetBadge();
   
@@ -151,6 +153,7 @@ async function showAuth() {
     unsubscribeRealtime();
     unsubscribeRealtime = null;
   }
+  currentSession = null;
 }
 
 export async function initApp() {
@@ -202,8 +205,14 @@ export async function initApp() {
     const content = input.value.trim();
     if (!content) return;
 
-    const user = (await supabase.auth.getUser()).data.user;
-    if (!user) return;
+    // Usa sessão atual definida em showApp() para evitar dependência de chamadas assíncronas
+    const user = currentSession?.user;
+    if (!user) {
+      const msg = el('syncMsg');
+      msg.textContent = 'Você precisa estar logado para salvar notas.';
+      setTimeout(() => (msg.textContent = ''), 2000);
+      return;
+    }
 
     const now = new Date().toISOString();
     const note = {
