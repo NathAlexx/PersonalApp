@@ -245,16 +245,25 @@ export async function initApp() {
   });
   window.addEventListener('offline', updateNetBadge);
 
-  // sessão existente
-  const { data: sess } = await supabase.auth.getSession();
-  if (sess.session) {
-    await showApp(sess.session);
-  } else {
+  // sessão existente (protegida por try/catch para evitar rejeições não tratadas)
+  try {
+    const { data: sess } = await supabase.auth.getSession();
+    if (sess?.session) {
+      await showApp(sess.session);
+    } else {
+      await showAuth();
+    }
+  } catch (e) {
+    console.warn('Falha ao obter sessão', e);
     await showAuth();
   }
 
   supabase.auth.onAuthStateChange(async (_event, session) => {
-    if (session) await showApp(session);
-    else await showAuth();
+    try {
+      if (session) await showApp(session);
+      else await showAuth();
+    } catch (e) {
+      console.warn('onAuthStateChange handler falhou', e);
+    }
   });
 }
