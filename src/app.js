@@ -50,6 +50,7 @@ function renderNotes(listEl, notes) {
     right.style.gap = '8px';
 
     const del = document.createElement('button');
+    del.type = 'button';
     del.className = 'btn secondary';
     del.textContent = 'Excluir';
     del.addEventListener('click', async () => {
