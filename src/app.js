@@ -279,4 +279,17 @@ export async function initApp() {
       console.warn('onAuthStateChange handler falhou', e);
     }
   });
+
+  // Evita que o navegador persista dados do app entre sessões:
+  // - limpa armazenamento síncrono (localStorage/sessionStorage)
+  // Nota: IndexedDB é assíncrono e pode não ser totalmente limpo no beforeunload,
+  // mas remover storage síncrono e desabilitar persistSession reduz retenção de dados.
+  window.addEventListener('beforeunload', () => {
+    try {
+      sessionStorage.clear();
+      localStorage.clear();
+    } catch (e) {
+      // silêncio
+    }
+  });
 }
