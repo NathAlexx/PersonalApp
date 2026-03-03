@@ -1,3 +1,5 @@
+import Chart from 'chart.js/auto';
+
 import {
   getLocalFinanceSnapshot,
   saveFinanceTagOptimistic,
@@ -25,6 +27,7 @@ function monthLabel(key) {
 }
 
 export async function renderFinanceView(containerEl, currentSession, trySyncCb) {
+  // main structure including chart canvas and some extra metadata
   containerEl.innerHTML = `
     <div class="row" style="display:flex; gap:12px; flex-wrap:wrap; align-items:stretch;">
       <div class="card" style="flex:1; min-width:280px;">
@@ -75,6 +78,11 @@ export async function renderFinanceView(containerEl, currentSession, trySyncCb) 
       <h3 style="margin:0 0 8px;">Parcelas futuras (linha do tempo)</h3>
       <div id="finTimeline" class="muted">Carregando…</div>
     </div>
+
+    <div class="card" style="margin-top:12px;">
+      <h3 style="margin:0 0 8px;">Gráfico de despesas</h3>
+      <canvas id="finChart" style="width:100%;height:240px;"></canvas>
+    </div>
   `;
 
   const user = currentSession?.user;
@@ -84,8 +92,28 @@ export async function renderFinanceView(containerEl, currentSession, trySyncCb) 
   }
 
   // Estado local simples
-  let state = await getLocalFinanceSnapshot();
+  let state = await getLocalFinanceSnapshot() || { tags: [], commitments: [], occurrences: [], links: [] };
   let selectedTagIds = new Set();
+
+  // desenha gráfico de barras mensal
+  function renderChart() {
+    const ctx = containerEl.querySelector('#finChart')?.getContext('2d');
+    if (!ctx) return;
+    const occ = [...state.occurrences].filter(o => o.status !== 'skipped');
+    const monthly = {};
+    for (const o of occ) {
+      const k = byMonthKey(o.due_date);
+      monthly[k] = (monthly[k] || 0) + Number(o.amount || 0);
+    }
+    const labels = Object.keys(monthly).sort();
+    const data = labels.map(l => monthly[l]);
+    if (window.__finChart) window.__finChart.destroy();
+    window.__finChart = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Total', data, backgroundColor: 'rgba(96,165,250,0.7)' }] },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+  }
 
   function renderTags() {
     const tagsEl = containerEl.querySelector('#finTags');
@@ -163,6 +191,7 @@ export async function renderFinanceView(containerEl, currentSession, trySyncCb) 
     if (!keys.length) {
       tlEl.textContent = 'Sem ocorrências ainda. Crie um compromisso acima.';
       tlEl.className = 'muted';
+      renderChart();
       return;
     }
 
@@ -193,8 +222,29 @@ export async function renderFinanceView(containerEl, currentSession, trySyncCb) 
 
         const left = document.createElement('div');
         const c = state.commitments.find(x => x.id === o.commitment_id);
+        // gather tags for this commitment
+        const tags = state.links
+          .filter(l => l.commitment_id === c?.id)
+          .map(l => state.tags.find(t => t.id === l.tag_id))
+          .filter(Boolean);
+
+        let metaHtml = `<div class="meta">${o.status === 'paid' ? 'Pago' : 'Pendente'}</div>`;
+        if (c) {
+          if (c.type === 'installment' && c.installments_count) {
+            metaHtml += `<div class="meta">${c.installments_count}x</div>`;
+          }
+          if (c.type === 'recurring' && c.day_of_month) {
+            metaHtml += `<div class="meta">mensal, dia ${c.day_of_month}</div>`;
+          }
+        }
+
+        if (tags.length) {
+          const tagNames = tags.map(t => t.name).join(', ');
+          metaHtml += `<div class="meta" style="margin-top:4px;">Tags: ${tagNames}</div>`;
+        }
+
         left.innerHTML = `<div class="content">${o.due_date} — ${c?.title || 'Compromisso'}</div>
-                          <div class="meta">${o.status === 'paid' ? 'Pago' : 'Pendente'}</div>`;
+                          ${metaHtml}`;
 
         const right = document.createElement('div');
         right.style.display = 'flex';
@@ -236,6 +286,9 @@ export async function renderFinanceView(containerEl, currentSession, trySyncCb) 
       monthBox.appendChild(list);
       tlEl.appendChild(monthBox);
     }
+
+    // after rebuilding timeline, always regenerate chart
+    renderChart();
   }
 
   // TAG FORM
