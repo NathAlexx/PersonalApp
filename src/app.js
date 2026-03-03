@@ -9,6 +9,14 @@ import {
   getLocalNotes
 } from './sync.js';
 import { upsertNote, deleteNote } from './storage.js';
+import { renderFinanceView } from './finance/financeView.js';
+import { pullFinanceFromServer, subscribeFinanceRealtime, getLocalFinanceSnapshot } from './sync.js';
+import {
+  upsertFinanceTag, deleteFinanceTag,
+  upsertFinanceCommitment, deleteFinanceCommitment,
+  upsertFinanceOccurrence, deleteFinanceOccurrence,
+  upsertFinanceCommitmentTag, deleteFinanceCommitmentTag
+} from './storage.js';
 
 function el(id) {
   const e = document.getElementById(id);
@@ -133,11 +141,18 @@ async function showApp(session) {
     try {
       await pullFromServer(session.user.id);
       await refreshFromLocal();
+      // Pull inicial finanças
+try {
+  await pullFinanceFromServer(session.user.id);
+} catch (e) {
+  console.warn('Pull finanças falhou', e);
+}
     } catch (e) {
       // sem pânico
       console.warn('Pull inicial falhou', e);
     }
   }
+
 
   // Realtime
   if (unsubscribeRealtime) unsubscribeRealtime();
@@ -153,6 +168,39 @@ async function showApp(session) {
     }
     await refreshFromLocal();
   });
+  // Realtime Finanças
+let unsubscribeFinance = null;
+if (unsubscribeFinance) unsubscribeFinance();
+unsubscribeFinance = subscribeFinanceRealtime(async (payload) => {
+  const { eventType, new: newRow, old, table } = payload;
+
+  if (table === 'finance_tags') {
+    if (eventType === 'DELETE') await deleteFinanceTag(old.id);
+    else await upsertFinanceTag(newRow);
+  }
+
+  if (table === 'finance_commitments') {
+    if (eventType === 'DELETE') await deleteFinanceCommitment(old.id);
+    else await upsertFinanceCommitment(newRow);
+  }
+
+  if (table === 'finance_occurrences') {
+    if (eventType === 'DELETE') await deleteFinanceOccurrence(old.id);
+    else await upsertFinanceOccurrence(newRow);
+  }
+
+  if (table === 'finance_commitment_tags') {
+    // keyPath composto: [commitment_id, tag_id]
+    if (eventType === 'DELETE') await deleteFinanceCommitmentTag(old.commitment_id, old.tag_id);
+    else await upsertFinanceCommitmentTag(newRow);
+  }
+
+  // Se a tela finanças estiver aberta, re-renderiza
+  const fin = document.getElementById('financeView');
+  if (fin && !fin.hidden) {
+    await renderFinanceView(fin, currentSession, trySync);
+  }
+});
 
   // Eventos UI
   // UI listeners são registrados em initApp() para evitar duplicação.
@@ -245,6 +293,29 @@ export async function initApp() {
   });
 
   el('btnSync').addEventListener('click', trySync);
+
+  el('btnNotes').addEventListener('click', async () => {
+  el('notesView').hidden = false;
+  el('financeView').hidden = true;
+});
+
+el('btnFinance').addEventListener('click', async () => {
+  el('notesView').hidden = true;
+  el('financeView').hidden = false;
+
+  // Renderiza finanças do cache local (rápido)
+  await renderFinanceView(el('financeView'), currentSession, trySync);
+
+  // Se online, puxa do servidor e re-renderiza
+  if (isOnline() && currentSession?.user) {
+    try {
+      await pullFinanceFromServer(currentSession.user.id);
+      await renderFinanceView(el('financeView'), currentSession, trySync);
+    } catch (e) {
+      console.warn('pullFinanceFromServer falhou', e);
+    }
+  }
+});
 
   el('btnSignOut').addEventListener('click', async () => {
     await supabase.auth.signOut();

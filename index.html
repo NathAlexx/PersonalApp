@@ -1,60 +1,68 @@
 <!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Personal App</title>
-    <meta name="theme-color" content="#111827" />
-    <link rel="stylesheet" href="%BASE_URL%styles.css" />
-    <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
-  </head>
-  <body>
-    <header class="topbar">
-      <div class="brand">
-        <div class="dot"></div>
-        <div>
-          <div class="title">Personal App</div>
-          <div class="subtitle">GitHub Pages + Supabase</div>
-        </div>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personal App</title>
+  <meta name="theme-color" content="#111827" />
+  <link rel="stylesheet" href="%BASE_URL%styles.css" />
+  <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="dot"></div>
+      <div>
+        <div class="title">Personal App</div>
+        <div class="subtitle">GitHub Pages + Supabase</div>
       </div>
-      <div class="right">
-        <span id="netStatus" class="pill">…</span>
-        <button id="btnSignOut" type="button" class="btn secondary" hidden>Sair</button>
-      </div>
-    </header>
+      <button id="btnNotes" class="btn secondary" type="button">Notas</button>
+      <button id="btnFinance" class="btn secondary" type="button">Finanças</button>
+    </div>
+    <div class="right">
+      <span id="netStatus" class="pill">…</span>
+      <button id="btnSignOut" type="button" class="btn secondary" hidden>Sair</button>
+    </div>
+  </header>
 
-    <main class="container">
-      <section id="authCard" class="card">
-        <h2>Entrar</h2>
-        <p class="muted">Login por e-mail/senha (simples para MVP). Depois você pode ligar OAuth (GitHub/Google).</p>
+  <main class="container">
+    <section id="authCard" class="card">
+      <h2>Entrar</h2>
+      <p class="muted">Login por e-mail/senha (simples para MVP). Depois você pode ligar OAuth (GitHub/Google).</p>
 
-        <form id="formLogin" class="stack">
-          <label>
-            <span>E-mail</span>
-            <input id="loginEmail" type="email" autocomplete="email" required />
-          </label>
-          <label>
-            <span>Senha</span>
-            <input id="loginPassword" type="password" autocomplete="current-password" required />
-          </label>
-          <button class="btn" type="submit">Entrar</button>
-          <button id="btnSignUp" class="btn secondary" type="button">Criar conta</button>
-        </form>
+      <form id="formLogin" class="stack">
+        <label>
+          <span>E-mail</span>
+          <input id="loginEmail" type="email" autocomplete="email" required />
+        </label>
+        <label>
+          <span>Senha</span>
+          <input id="loginPassword" type="password" autocomplete="current-password" required />
+        </label>
+        <button class="btn" type="submit">Entrar</button>
+        <button id="btnSignUp" class="btn secondary" type="button">Criar conta</button>
+      </form>
 
-        <div class="hr"></div>
-        <details>
-          <summary>Modo rápido (para você testar)</summary>
-          <ol>
-            <li>Crie conta com e-mail/senha</li>
-            <li>Rode o SQL em <code>sql/001_notes.sql</code></li>
-            <li>Crie e salve notas</li>
-          </ol>
-        </details>
+      <div class="hr"></div>
+      <details>
+        <summary>Modo rápido (para você testar)</summary>
+        <ol>
+          <li>Crie conta com e-mail/senha</li>
+          <li>Rode o SQL em <code>sql/001_notes.sql</code></li>
+          <li>Crie e salve notas</li>
+        </ol>
+      </details>
 
-        <p id="authMsg" class="msg" hidden></p>
-      </section>
+      <p id="authMsg" class="msg" hidden></p>
+    </section>
 
-      <section id="appCard" class="card" hidden>
+
+
+    <section id="appCard" class="card" hidden>
+
+      <div id="notesView">
         <div class="row">
           <h2>Notas</h2>
           <div class="muted" id="userInfo"></div>
@@ -71,13 +79,19 @@
         </div>
 
         <ul id="notesList" class="list"></ul>
-      </section>
+      </div>
 
-      <footer class="footer muted">
-        <span>Offline-first básico: IndexedDB + fila de sync + Service Worker.</span>
-      </footer>
-    </main>
+      <div id="financeView" hidden></div>
 
-    <script type="module" src="/src/main.js"></script>
-  </body>
+    </section>
+
+
+    <footer class="footer muted">
+      <span>Offline-first básico: IndexedDB + fila de sync + Service Worker.</span>
+    </footer>
+  </main>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
 </html>
