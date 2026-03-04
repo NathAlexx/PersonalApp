@@ -94,24 +94,43 @@ export async function renderFinanceView(containerEl, currentSession, trySyncCb) 
   // Estado local simples
   let state = await getLocalFinanceSnapshot() || { tags: [], commitments: [], occurrences: [], links: [] };
   let selectedTagIds = new Set();
+  let chartRenderScheduled = false;
 
   // desenha gráfico de barras mensal
   function renderChart() {
-    const ctx = containerEl.querySelector('#finChart')?.getContext('2d');
-    if (!ctx) return;
-    const occ = [...state.occurrences].filter(o => o.status !== 'skipped');
-    const monthly = {};
-    for (const o of occ) {
-      const k = byMonthKey(o.due_date);
-      monthly[k] = (monthly[k] || 0) + Number(o.amount || 0);
-    }
-    const labels = Object.keys(monthly).sort();
-    const data = labels.map(l => monthly[l]);
-    if (window.__finChart) window.__finChart.destroy();
-    window.__finChart = new Chart(ctx, {
-      type: 'bar',
-      data: { labels, datasets: [{ label: 'Total', data, backgroundColor: 'rgba(96,165,250,0.7)' }] },
-      options: { responsive: true, maintainAspectRatio: false }
+    if (chartRenderScheduled) return;
+    chartRenderScheduled = true;
+
+    // Aguarda a próxima frame para evitar conflitos
+    requestAnimationFrame(() => {
+      const ctx = containerEl.querySelector('#finChart')?.getContext('2d');
+      if (!ctx) {
+        chartRenderScheduled = false;
+        return;
+      }
+
+      // Destrói o gráfico anterior se existir
+      if (window.__finChart) {
+        window.__finChart.destroy();
+        window.__finChart = null;
+      }
+
+      const occ = [...state.occurrences].filter(o => o.status !== 'skipped');
+      const monthly = {};
+      for (const o of occ) {
+        const k = byMonthKey(o.due_date);
+        monthly[k] = (monthly[k] || 0) + Number(o.amount || 0);
+      }
+      const labels = Object.keys(monthly).sort();
+      const data = labels.map(l => monthly[l]);
+
+      window.__finChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets: [{ label: 'Total', data, backgroundColor: 'rgba(96,165,250,0.7)' }] },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      chartRenderScheduled = false;
     });
   }
 
