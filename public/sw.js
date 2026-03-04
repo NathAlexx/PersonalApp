@@ -1,7 +1,7 @@
 // Service Worker bem simples (cache-first para assets estáticos).
 // Para evoluir: use estratégias por rota (stale-while-revalidate) e versões.
 
-const CACHE_NAME = 'personal-app-cache-v1';
+const CACHE_NAME = 'personal-app-cache-v3';
 
 const scope = self.registration.scope; // ex: https://nathalexx.github.io/PersonalApp/
 const ASSETS = [
@@ -49,4 +49,16 @@ self.addEventListener('fetch', (event) => {
       }
     })()
   );
+});
+
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((k) => caches.delete(k)));
+    await self.clients.claim();
+  })());
 });
