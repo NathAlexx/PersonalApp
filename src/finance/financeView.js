@@ -49,8 +49,9 @@ export async function renderFinanceView(containerEl, currentSession, trySyncCb) 
     <div class="card" style="margin-top:12px;">
       <h3 style="margin:0 0 8px;">Novo Compromisso</h3>
 
-      <form id="finCommitForm" style="display:grid; grid-template-columns: 1fr 180px 200px; gap:10px;">
-        <input id="finTitle" placeholder="Título (ex: Notebook)" />
+      <form id="finCommitForm" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <input id="finTitle" placeholder="Título (ex: Notebook)" style="grid-column: 1 / -1;" />
+        
         <input id="finAmount" type="number" step="0.01" placeholder="Valor (ex: 199.90)" />
         <select id="finType">
           <option value="installment">Parcelado</option>
@@ -58,9 +59,10 @@ export async function renderFinanceView(containerEl, currentSession, trySyncCb) 
           <option value="one_time">Único</option>
         </select>
 
-        <input id="finStartDate" type="date" />
-        <input id="finInstallments" type="number" min="1" placeholder="Parcelas (ex: 12)" />
-        <input id="finDayOfMonth" type="number" min="1" max="31" placeholder="Dia mês (ex: 5)" />
+        <input id="finStartDate" type="date" placeholder="Data inicial" style="grid-column: 1 / -1;" />
+        
+        <input id="finInstallments" type="number" min="1" placeholder="Nº de parcelas (ex: 12)" style="display:none;" />
+        <input id="finDayOfMonth" type="number" min="1" max="31" placeholder="Dia do mês (1-31)" style="display:none;" />
 
         <div style="grid-column: 1 / -1; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
           <div class="muted">Selecione tags:</div>
@@ -96,7 +98,7 @@ export async function renderFinanceView(containerEl, currentSession, trySyncCb) 
   let selectedTagIds = new Set();
   let chartRenderScheduled = false;
 
-  // desenha gráfico de barras mensal
+    // desenha gráfico de barras mensal
   function renderChart() {
     if (chartRenderScheduled) return;
     chartRenderScheduled = true;
@@ -127,7 +129,13 @@ export async function renderFinanceView(containerEl, currentSession, trySyncCb) 
       window.__finChart = new Chart(ctx, {
         type: 'bar',
         data: { labels, datasets: [{ label: 'Total', data, backgroundColor: 'rgba(96,165,250,0.7)' }] },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 750 },
+          interaction: { mode: 'none' },
+          plugins: { tooltip: { enabled: false }, legend: { display: true } }
+        }
       });
 
       chartRenderScheduled = false;
@@ -331,6 +339,20 @@ export async function renderFinanceView(containerEl, currentSession, trySyncCb) 
     renderTags();
     await trySyncCb();
   });
+
+  // Mostrar/esconder campos condicionais baseado no tipo de compromisso
+  const typeSelect = containerEl.querySelector('#finType');
+  const installmentsInput = containerEl.querySelector('#finInstallments');
+  const dayOfMonthInput = containerEl.querySelector('#finDayOfMonth');
+
+  function updateConditionalFields() {
+    const type = typeSelect.value;
+    installmentsInput.style.display = type === 'installment' ? 'block' : 'none';
+    dayOfMonthInput.style.display = type === 'recurring' ? 'block' : 'none';
+  }
+
+  typeSelect.addEventListener('change', updateConditionalFields);
+  updateConditionalFields(); // inicializa na load
 
   // COMMIT FORM
   containerEl.querySelector('#finCommitForm').addEventListener('submit', async (e) => {
